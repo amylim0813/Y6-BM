@@ -1,0 +1,1229 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Ms Amy 学习网</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+  <style>
+    :root{
+      --bg:#f6f8fb; --card:#fff; --line:#e5e7eb; --text:#111827; --muted:#6b7280;
+      --primary:#0f766e; --danger:#b91c1c; --warn:#b45309; --ok:#15803d; --boss:#7c3aed;
+    }
+    *{box-sizing:border-box}
+    body{font-family:Arial,sans-serif;background:var(--bg);color:var(--text);max-width:980px;margin:0 auto;padding:12px;text-align:center;width:100%;min-height:100vh}
+    #login{display:flex;justify-content:center;width:100%}
+    #login,#chapters,#quiz,#finish{margin:14px 0}
+    #chapters,#quiz,#finish{display:none}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;box-shadow:0 4px 16px rgba(0,0,0,.04)}
+    .floating-back{position:sticky;top:10px;left:0;text-align:left;z-index:5;margin-bottom:10px}
+    .floating-back button,.btn{padding:10px 14px;border-radius:999px;border:0;background:#111827;color:#fff;cursor:pointer}
+    .btn.secondary{background:#fff;color:#111827;border:1px solid #111827}
+    .btn.ghost{background:#eef2ff;color:#3730a3;border:1px solid #c7d2fe}
+    .btn.boss{background:var(--boss)}
+    .btn.small{padding:7px 11px;border-radius:10px;font-size:13px}
+    input[type="text"], input[type="password"], select{width:100%;padding:12px;border:1px solid #d1d5db;border-radius:12px;margin:8px 0;background:#fff;color:var(--text)}
+    .login-wrap{max-width:430px;width:100%;margin:30px auto}
+    .top-stats{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:10px 0}
+    .pill{background:#fff;border:1px solid var(--line);border-radius:999px;padding:8px 12px;font-size:14px}
+    .xp-wrap{display:flex;align-items:center;gap:10px;max-width:560px;margin:8px auto 0;padding:10px 12px;border:1px solid var(--line);border-radius:16px;background:#fff}
+    .xp-lv{font-weight:700;white-space:nowrap}
+    .xp-bar{flex:1;height:16px;background:#e5e7eb;border-radius:999px;overflow:hidden;position:relative}
+    .xp-fill{height:100%;width:0%;background:linear-gradient(90deg,#10b981,#22c55e);transition:width .35s ease}
+    .xp-text{font-weight:700;white-space:nowrap}
+    .levelup{display:inline-block;margin-top:8px;color:#15803d;font-weight:700}
+    .group{margin:16px 0;text-align:left}
+    .group-title{font-size:20px;font-weight:700;margin:8px 0 10px}
+    .boss-card,.monster-item{display:flex;justify-content:space-between;align-items:center;gap:12px;border:1px solid var(--line);background:#fff;border-radius:16px;padding:12px 14px;margin:10px 0}
+    .boss-card{border-color:#ddd6fe;background:#faf5ff}
+    .title{text-align:left;min-width:0}
+    .title-main{font-weight:700}
+    .meta{color:var(--muted);font-size:13px;margin-top:4px;line-height:1.5}
+    .status{font-weight:700}
+    .alive{color:var(--ok)} .dead{color:var(--danger)} .locked{color:var(--warn)}
+    .actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+    #topbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+    #topbar .left{text-align:left}
+    progress{width:100%;height:18px}
+    .question{text-align:left;margin:15px 0;padding-left:6px}
+    .option-label{display:block;margin:6px 0;cursor:pointer;padding:8px;border-radius:10px}
+    .option-label:hover{background:#f3f4f6}
+    .feedback{font-weight:bold;margin:12px 0;line-height:1.6}
+    input[type="radio"],input[type="checkbox"]{transform:scale(1.2);margin-right:8px}
+    img{max-width:100%;margin:10px 0;border:2px solid #ccc;border-radius:10px}
+    #submit-status{margin-top:10px;font-size:14px}
+    .muted{color:var(--muted)}
+    .hint{font-size:13px;color:var(--muted);margin-top:8px;line-height:1.6}
+    .btn.done{background:#16a34a}
+    .btn.done:disabled{opacity:1;cursor:not-allowed}
+    .hp-wrap{margin-top:6px;max-width:420px}
+    .hp-line{display:flex;align-items:center;gap:8px}
+    .hp-label{font-size:13px;font-weight:700;white-space:nowrap}
+    .hp-bar{flex:1;height:14px;background:#e5e7eb;border-radius:999px;overflow:hidden}
+    .hp-fill{height:100%;width:100%;background:linear-gradient(90deg,#ef4444,#f97316);transition:width .25s ease}
+    .hp-text{font-size:12px;color:#6b7280;white-space:nowrap}
+    .modal-mask{position:fixed;inset:0;background:rgba(17,24,39,.55);display:none;align-items:center;justify-content:center;padding:16px;z-index:50}
+    .modal{background:#fff;max-width:720px;width:100%;max-height:85vh;overflow:auto;border-radius:18px;padding:18px;text-align:left}
+    .footer-help{margin-top:14px;font-size:14px;line-height:1.7}
+    .footer-help a{color:#0f766e;font-weight:700;text-decoration:none}
+    .loading-box{position:fixed;inset:0;background:rgba(255,255,255,.78);display:none;align-items:center;justify-content:center;z-index:60;padding:16px}
+    .loading-inner{background:#fff;border:1px solid var(--line);border-radius:18px;padding:18px 20px;max-width:420px;width:100%;box-shadow:0 10px 28px rgba(0,0,0,.08)}
+    .version-tag{margin-top:10px;font-size:12px;color:var(--muted)}
+
+    body.theme-soft{--bg:#f6f8fb;--card:#fff;--line:#e5e7eb;--text:#111827;--muted:#6b7280}
+    body.theme-warm{--bg:#fff7ed;--card:#fffaf2;--line:#fed7aa;--text:#1f2937;--muted:#78716c}
+    body.theme-green{--bg:#ecfdf5;--card:#fff;--line:#bbf7d0;--text:#064e3b;--muted:#047857}
+    body.theme-blue{--bg:#eff6ff;--card:#fff;--line:#bfdbfe;--text:#172554;--muted:#2563eb}
+    body.theme-dark{--bg:#111827;--card:#1f2937;--line:#374151;--text:#f9fafb;--muted:#d1d5db;--primary:#14b8a6}
+    body.theme-dark input[type="text"],body.theme-dark input[type="password"],body.theme-dark select{background:#111827;color:#f9fafb;border-color:#4b5563}
+    body.theme-dark .btn.secondary{background:#111827;color:#f9fafb;border-color:#9ca3af}
+    body.theme-dark .btn.ghost{background:#312e81;color:#e0e7ff;border-color:#818cf8}
+    .theme-panel{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin:10px 0}
+    .theme-dot{border:1px solid var(--line);border-radius:999px;padding:7px 10px;background:var(--card);color:var(--text);cursor:pointer;font-size:13px}
+    .theme-dot.active{outline:3px solid rgba(20,184,166,.28);font-weight:700}
+    .battle-arena{display:none;margin:10px 0 12px;padding:12px;border:1px solid var(--line);border-radius:16px;background:var(--card)}
+    .fighters{display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .fighter{text-align:center;min-width:95px}
+    .fighter-icon{font-size:38px;line-height:1.1;transition:transform .18s ease, filter .18s ease}
+    .fighter-name{font-weight:700;font-size:13px;margin-top:4px}
+    .vs{font-size:24px;font-weight:800;color:var(--muted)}
+    .hp-wrap{margin-top:6px}
+    .hp-line{display:flex;align-items:center;gap:8px;margin-top:6px}
+    .hp-label{font-size:13px;font-weight:700;white-space:nowrap;min-width:70px}
+    .hp-bar{flex:1;height:14px;background:#e5e7eb;border-radius:999px;overflow:hidden}
+    .hp-fill{height:100%;width:100%;background:linear-gradient(90deg,#ef4444,#f97316);transition:width .25s ease}
+    .hp-fill.player{background:linear-gradient(90deg,#22c55e,#10b981)}
+    .hp-text{font-size:12px;color:var(--muted);white-space:nowrap;min-width:46px;text-align:right}
+    .combat-msg{font-size:13px;color:var(--muted);margin-top:8px;min-height:18px}
+    .hit{animation:hitShake .25s ease}
+    .attack{animation:attackMove .25s ease}
+    .heal{animation:healPulse .35s ease}
+    @keyframes hitShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-7px)}75%{transform:translateX(7px)}}
+    @keyframes attackMove{0%,100%{transform:translateX(0) scale(1)}50%{transform:translateX(18px) scale(1.08)}}
+    @keyframes healPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.18);filter:drop-shadow(0 0 8px #22c55e)}}
+    .focus-card{outline:4px solid rgba(20,184,166,.35);box-shadow:0 0 0 4px rgba(20,184,166,.12)}
+
+
+    body.theme-dark{--bg:#0f172a;--card:#1e293b;--line:#475569;--text:#f8fafc;--muted:#cbd5e1;--primary:#14b8a6}
+    body.theme-dark .card,
+    body.theme-dark .monster-item,
+    body.theme-dark .boss-card,
+    body.theme-dark .xp-wrap,
+    body.theme-dark .battle-arena,
+    body.theme-dark .modal,
+    body.theme-dark .theme-dot,
+    body.theme-dark .pill{
+      background:#1e293b!important;
+      color:#f8fafc!important;
+      border-color:#475569!important;
+    }
+    body.theme-dark .title-main,
+    body.theme-dark h2,
+    body.theme-dark h3,
+    body.theme-dark .group-title,
+    body.theme-dark .meta,
+    body.theme-dark .muted,
+    body.theme-dark .footer-help,
+    body.theme-dark .version-tag{
+      color:#f8fafc!important;
+    }
+    body.theme-dark .meta *{color:#f8fafc!important}
+    body.theme-dark .alive{color:#4ade80!important}
+    body.theme-dark .dead{color:#f87171!important}
+    body.theme-dark .locked{color:#fbbf24!important}
+    body.theme-dark input[type="text"],
+    body.theme-dark input[type="password"],
+    body.theme-dark select{
+      background:#0f172a!important;
+      color:#f8fafc!important;
+      border-color:#64748b!important;
+    }
+    body.theme-dark .btn.secondary{background:#0f172a!important;color:#f8fafc!important;border-color:#94a3b8!important}
+    body.theme-dark .btn.ghost{background:#312e81!important;color:#e0e7ff!important;border-color:#818cf8!important}
+    body.theme-dark .option-label:hover{background:#334155!important}
+
+    .hide{display:none!important}
+  </style>
+</head>
+<body class="theme-soft">
+
+<div id="login" class="login-wrap">
+  <div class="card">
+    <h2 id="loginTitle"></h2>
+    <p class="muted">请输入学生姓名后开始练习</p>
+    <div class="pill" id="loginBookPill" style="display:inline-block;margin-bottom:8px;">科目：-</div>
+    <input type="text" id="username" placeholder="姓名 / Name"/>
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+      <button id="startBtn" class="btn" type="button">进入 / Start</button>
+      <button id="rulesBtn" class="btn ghost" type="button">📜 游戏规则</button>
+      <button id="refreshBtn" class="btn ghost" type="button">🔄 更新页面</button>
+    </div>
+    <div class="theme-panel" id="themePanelLogin">
+      <button class="theme-dot" data-theme="soft">白色</button>
+      <button class="theme-dot" data-theme="warm">米色</button>
+      <button class="theme-dot" data-theme="green">绿色</button>
+      <button class="theme-dot" data-theme="blue">蓝色</button>
+      <button class="theme-dot" data-theme="dark">Dark</button>
+    </div>
+    <p id="loginMsg" class="muted"></p>
+    <p class="hint">不需要月密码。首次加载题库会稍微慢一点，请耐心等几秒。若题目没有出现，请点“更新页面”或用 Chrome / Safari 打开。提交成绩时也需要一点时间，请不要马上关闭页面。</p>
+    <div class="footer-help">
+      有问题可直接 WhatsApp 老师：<a href="https://wa.me/60167312519" target="_blank" rel="noopener">016-7312519</a>
+    </div>
+    <div class="version-tag" id="versionTag">版本：2026.05.14.3</div>
+  </div>
+</div>
+
+<div id="chapters">
+  <div class="floating-back">
+    <button type="button" id="logoutBtn">⎋ 更换名字</button>
+  </div>
+  <div class="card" style="margin-bottom:12px;">
+    <h2 style="margin:0 0 10px;">怪物复习地图</h2>
+    <div class="top-stats">
+      <div class="pill" id="statUser">学生：-</div>
+      <div class="pill" id="statBook">科目：-</div>
+      <button id="topRulesBtn" class="btn ghost small" type="button">📜 游戏规则</button>
+      <button id="topBoardBtn" class="btn ghost small" type="button">🏆 排行榜</button>
+      
+    </div>
+    <div class="muted" style="margin-top:8px;">背景颜色 / Theme</div>
+    <div class="theme-panel" id="themePanelTop">
+      <button class="theme-dot" data-theme="soft">白色</button>
+      <button class="theme-dot" data-theme="warm">米色</button>
+      <button class="theme-dot" data-theme="green">绿色</button>
+      <button class="theme-dot" data-theme="blue">蓝色</button>
+      <button class="theme-dot" data-theme="dark">Dark</button>
+    </div>
+    <div class="xp-wrap">
+      <div class="xp-lv" id="statLevel">Lv 1</div>
+      <div class="xp-bar"><div class="xp-fill" id="xpFill"></div></div>
+      <div class="xp-text" id="statExp">⚡0 / 100</div>
+    </div>
+    <div id="levelUpMsg" class="levelup"></div>
+    <div class="version-tag">版本：2026.05.14.3</div>
+  </div>
+  <div id="chapterWrap"></div>
+</div>
+
+<div id="quiz">
+  <div class="floating-back">
+    <button type="button" id="backToListTop">🏠 回到章节选择</button>
+  </div>
+  <div class="card">
+    <div id="battleArena" class="battle-arena">
+      <div class="fighters">
+        <div class="fighter"><div id="playerIcon" class="fighter-icon">👦</div><div class="fighter-name" id="playerName">学生</div></div>
+        <div class="vs">⚔️</div>
+        <div class="fighter"><div id="monsterIcon" class="fighter-icon">🧟</div><div class="fighter-name" id="enemyName">小怪</div></div>
+      </div>
+      <div class="hp-wrap">
+        <div class="hp-line"><span class="hp-label">学生HP</span><div class="hp-bar"><div class="hp-fill player" id="playerHpFill"></div></div><span class="hp-text" id="playerHpText">5/5</span></div>
+        <div class="hp-line"><span class="hp-label" id="enemyHpLabel">怪兽HP</span><div class="hp-bar"><div class="hp-fill" id="enemyHpFill"></div></div><span class="hp-text" id="enemyHpText">0/0</span></div>
+      </div>
+      <div id="combatMsg" class="combat-msg"></div>
+    </div>
+    <div id="topbar">
+      <div class="left">
+        <div id="quiz-title" style="font-weight:bold;"></div>
+        <div id="mode-badge" class="muted"></div>
+        <div id="battleHpBox" class="hp-wrap" style="display:none;"></div>
+      </div>
+      <div class="right">
+        <span id="score">得分: 0</span>
+        <span id="remaining" style="margin-left:10px;">剩余题目: 0</span>
+      </div>
+    </div>
+    <progress id="progress" value="0" max="0"></progress>
+    <div id="question-area"></div>
+  </div>
+</div>
+
+<div id="finish">
+  <div class="floating-back">
+    <button type="button" id="backFromFinish">🏠 回到章节选择</button>
+  </div>
+  <div class="card">
+    <h3 id="finish-msg"></h3>
+    <p id="stats"></p>
+    <p id="battle-result"></p>
+    <p id="submit-status"></p>
+    <div id="controls"></div>
+  </div>
+</div>
+
+<iframe name="postFrame" style="display:none;"></iframe>
+<form id="postForm"
+      action="https://script.google.com/macros/s/AKfycbwPmrUewy5fWNFmxhPCnrR4Vxw18PrHZ0UFZsR1ScUfOnjjTXLjzjSIQG1JwCpgI67r/exec"
+      method="post" target="postFrame" style="display:none;">
+  <input name="action" value="submitScore"/>
+  <input name="book"/>
+  <input name="quizId"/><input name="name"/><input name="score"/>
+  <input name="correct"/><input name="wrong"/><input name="time"/><input name="mode"/><input name="expGained"/>
+</form>
+
+
+<div id="rulesMask" class="modal-mask">
+  <div class="modal">
+    <h3 style="margin-top:0;">📜 挑战规则</h3>
+    <div style="line-height:1.8;">
+      <p><strong>🧟 小怪挑战</strong><br>
+      正确率达到 70% 就能击败小怪；达到 90% 以上就是完美击败。</p>
+      <p><strong>🔁 小怪复活</strong><br>
+      第一次击败后 7 天复活；第二次 14 天；第三次起 30 天。完美击败会直接 30 天后复活。</p>
+      <p><strong>👹 Boss 挑战</strong><br>
+      一个 Bab 里有 70% 小怪被击败后，才会解锁 Boss。Boss 会从整个 Bab 随机抽约 25% 的题目来考。</p>
+      <p><strong>⚔️ Boss 机制</strong><br>
+      90% 以上可直接击败 Boss；若表现不足，Boss 只会扣血，还要继续挑战。</p>
+      <p><strong>📘 普通练习</strong><br>
+      练习模式照常可做，答错的题目会再出现 2 次，帮助你记熟。</p>
+      <p><strong>⭐ EXP 与等级</strong><br>
+      完成练习、击败小怪、挑战 Boss 都会拿到 EXP，EXP 满了就会升级。</p>
+      <p><strong>⏳ 小提醒</strong><br>
+      首次进入或提交成绩时，系统可能会稍慢一点，请稍等几秒。</p>
+    </div>
+    <div style="text-align:right;"><button id="closeRulesBtn" class="btn">关闭</button></div>
+  </div>
+</div>
+
+
+<div id="boardMask" class="modal-mask">
+  <div class="modal">
+    <h3 style="margin-top:0;">🏆 排行榜</h3>
+    <div class="muted" style="margin-bottom:10px;">显示当前科目前 10 名</div>
+    <div id="boardContent" style="line-height:1.8;">加载中...</div>
+    <div style="text-align:right;"><button id="closeBoardBtn" class="btn">关闭</button></div>
+  </div>
+</div>
+
+<div id="loadingMask" class="loading-box">
+  <div class="loading-inner">
+    <div id="loadingText" style="font-weight:700;margin-bottom:8px;">请稍等...</div>
+    <div class="muted">首次加载题库或提交成绩时会稍慢一点，请不要关闭页面。</div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('loginTitle').textContent = document.title;
+
+  const MAX_OPTS = 15;
+  const SCRIPT_URL = document.getElementById('postForm').getAttribute('action');
+  const STORAGE_KEY = 'ms_amy_quiz_student_name_v1';
+  const TZ = 'Asia/Kuala_Lumpur';
+  const APP_VERSION = '2026.05.14.3';
+  const SITE_TITLE = 'Ms Amy 学习网';
+
+  // ✅ 每个 GitHub repo 一个科目：复制这个 index 到不同 repo 时，只需要改这里。
+  // 例子：'Y4 BM', 'Y4 BI', 'Y5 BM', 'Y5 BI', 'Y6 BM', 'Y6 BI',
+  //      'F1 SEJ', 'F2 SEJ', 'F3 SEJ', 'F4 SEJ', 'F5 SEJ',
+  //      'F1 BM', 'F2 BM', 'F3 BM', 'F4 BM', 'F5 BM',
+  //      'F1 BI', 'F2 BI', 'F3 BI', 'F4 BI', 'F5 BI'
+  const REPO_BOOK = 'F1 SEJ';
+
+  // ✅ 不同 repo 版本：Chapters.csv 放在 repo 根目录。
+  const CHAPTERS_CSV = 'Chapters.csv';
+
+  const SUBJECT_LABELS = {
+    'Y4 BM':'Y4 BM 国语', 'Y4 BI':'Y4 BI 英文',
+    'Y5 BM':'Y5 BM 国语', 'Y5 BI':'Y5 BI 英文',
+    'Y6 BM':'Y6 BM 国语', 'Y6 BI':'Y6 BI 英文',
+    'F1 SEJ':'F1 SEJ Sejarah', 'F2 SEJ':'F2 SEJ Sejarah', 'F3 SEJ':'F3 SEJ Sejarah', 'F4 SEJ':'F4 SEJ Sejarah', 'F5 SEJ':'F5 SEJ Sejarah',
+    'F1 BM':'F1 BM 国语', 'F2 BM':'F2 BM 国语', 'F3 BM':'F3 BM 国语', 'F4 BM':'F4 BM 国语', 'F5 BM':'F5 BM 国语',
+    'F1 BI':'F1 BI 英文', 'F2 BI':'F2 BI 英文', 'F3 BI':'F3 BI 英文', 'F4 BI':'F4 BI 英文', 'F5 BI':'F5 BI 英文'
+  };
+  let serverBaseMs = 0;
+  let perfBaseMs = 0;
+
+  let user = '';
+  let displayUser = '';
+  let book = getBookFromUrl() || REPO_BOOK;
+  let rows = [];
+  let chapterKey, labelKey, sheetKey;
+  let currentRow = null;
+  let currentMode = 'practice';
+  let currentBab = null;
+  let qs = [], queue = [], score = 0, correct = 0, wrong = 0, chapterStart = 0;
+  let currentExpGain = 0;
+  let currentBossMeta = null;
+  let baseTotal = 0;
+  let battleHp = null;
+  let battleMaxHp = null;
+  let battleLabel = '';
+  let playerHp = 5;
+  let playerMaxHp = 5;
+  let wrongStreak = 0;
+  let correctStreak = 0;
+  let battleEndedByDeath = false;
+  let lastFocusId = '';
+  let currentMonsterRowsForBoss = [];
+  let countCache = new Map();
+  let monsterQuestionCache = new Map();
+  let progressState = { exp:0, level:1, monsters:{}, bosses:{} };
+
+  ensureLatestVersion_();
+  updateAppTitle();
+
+  const saved = readSavedAuth();
+  if (saved && saved.user) {
+    document.getElementById('username').value = saved.user;
+  }
+  const loginBookPill = document.getElementById('loginBookPill');
+  if (loginBookPill) loginBookPill.textContent = '科目：' + (SUBJECT_LABELS[book] || book);
+
+  document.getElementById('startBtn').onclick = handleLogin;
+  document.getElementById('rulesBtn').onclick = () => toggleRules(true);
+  if (document.getElementById('refreshBtn')) document.getElementById('refreshBtn').onclick = forceRefreshPage;
+  document.getElementById('topRulesBtn').onclick = () => toggleRules(true);
+  document.getElementById('topBoardBtn').onclick = () => toggleBoard(true);
+  document.getElementById('closeRulesBtn').onclick = () => toggleRules(false);
+  document.getElementById('closeBoardBtn').onclick = () => toggleBoard(false);
+  document.getElementById('rulesMask').onclick = (e) => { if (e.target.id === 'rulesMask') toggleRules(false); };
+  document.getElementById('boardMask').onclick = (e) => { if (e.target.id === 'boardMask') toggleBoard(false); };
+  document.getElementById('backToListTop').onclick = showChapterList;
+  document.getElementById('backFromFinish').onclick = () => {
+    document.getElementById('finish').style.display = 'none';
+    showChapterList();
+  };
+  setupThemeButtons();
+
+  document.getElementById('logoutBtn').onclick = () => {
+    localStorage.removeItem(STORAGE_KEY);
+    location.reload();
+  };
+
+
+  function ensureLatestVersion_(){
+    try{
+      const key = 'kee_quiz_app_version';
+      const oldV = localStorage.getItem(key) || '';
+      if (oldV !== APP_VERSION) {
+        localStorage.setItem(key, APP_VERSION);
+        const u = new URL(location.href);
+        if (u.searchParams.get('v') !== APP_VERSION) {
+          u.searchParams.set('v', APP_VERSION);
+          location.replace(u.toString());
+        }
+      }
+    }catch(_){}
+  }
+
+
+  function ensureLatestVersion_(){
+    try {
+      const key = 'kee_quiz_app_version';
+      const oldV = localStorage.getItem(key) || '';
+      if (oldV !== APP_VERSION) {
+        localStorage.setItem(key, APP_VERSION);
+        const u = new URL(location.href);
+        if (u.searchParams.get('v') !== APP_VERSION) {
+          u.searchParams.set('v', APP_VERSION);
+          location.replace(u.toString());
+        }
+      }
+    } catch(_) {}
+  }
+
+  function forceRefreshPage(){
+    try {
+      localStorage.setItem('kee_quiz_app_version', APP_VERSION);
+      const u = new URL(location.href);
+      u.searchParams.set('v', APP_VERSION);
+      u.searchParams.set('reload', String(Date.now()));
+      location.replace(u.toString());
+    } catch(_) {
+      location.reload();
+    }
+  }
+
+  function nowMs(){
+    return serverBaseMs ? serverBaseMs + (performance.now() - perfBaseMs) : Date.now();
+  }
+
+
+  function setupThemeButtons(){
+    const savedTheme = localStorage.getItem('kee_quiz_theme') || 'soft';
+    applyTheme(savedTheme);
+    document.querySelectorAll('.theme-dot').forEach(btn => btn.onclick = () => applyTheme(btn.dataset.theme || 'soft'));
+  }
+
+  function applyTheme(theme){
+    const allowed = ['soft','warm','green','blue','dark'];
+    if (!allowed.includes(theme)) theme = 'soft';
+    document.body.classList.remove('theme-soft','theme-warm','theme-green','theme-blue','theme-dark');
+    document.body.classList.add('theme-' + theme);
+    localStorage.setItem('kee_quiz_theme', theme);
+    document.querySelectorAll('.theme-dot').forEach(btn => btn.classList.toggle('active', btn.dataset.theme === theme));
+  }
+
+  function toggleRules(show){
+    document.getElementById('rulesMask').style.display = show ? 'flex' : 'none';
+  }
+
+  async function toggleBoard(show){
+    document.getElementById('boardMask').style.display = show ? 'flex' : 'none';
+    if (!show) return;
+    const box = document.getElementById('boardContent');
+    box.innerHTML = '加载中...';
+    try {
+      const r = await apiFetch({ action:'getLeaderboard', book, limit:'10' }, 3);
+      if (!r.ok) { box.innerHTML = '<div class="muted">读取排行榜失败</div>'; return; }
+      const rows = Array.isArray(r.rows) ? r.rows : [];
+      if (!rows.length) { box.innerHTML = '<div class="muted">暂时还没有排行榜数据</div>'; return; }
+      const html = ['<table style="width:100%;border-collapse:collapse">', '<tr><th style="text-align:left;border-bottom:1px solid #e5e7eb;padding:8px">排名</th><th style="text-align:left;border-bottom:1px solid #e5e7eb;padding:8px">名字</th><th style="text-align:left;border-bottom:1px solid #e5e7eb;padding:8px">Level</th><th style="text-align:left;border-bottom:1px solid #e5e7eb;padding:8px">EXP</th><th style="text-align:left;border-bottom:1px solid #e5e7eb;padding:8px">小怪</th><th style="text-align:left;border-bottom:1px solid #e5e7eb;padding:8px">Boss</th></tr>'];
+      rows.forEach((row, idx) => {
+        const rank = idx + 1;
+        const medal = rank === 1 ? '🥇 ' : (rank === 2 ? '🥈 ' : (rank === 3 ? '🥉 ' : ''));
+        html.push(`<tr>
+          <td style="padding:8px;border-bottom:1px solid #f3f4f6">${medal}${rank}</td>
+          <td style="padding:8px;border-bottom:1px solid #f3f4f6">${escapeHtml(String(row.Name || '-'))}</td>
+          <td style="padding:8px;border-bottom:1px solid #f3f4f6">${escapeHtml(String(row.Level || 1))}</td>
+          <td style="padding:8px;border-bottom:1px solid #f3f4f6">${escapeHtml(String(row.EXP || 0))}</td>
+          <td style="padding:8px;border-bottom:1px solid #f3f4f6">${escapeHtml(String(row.MonsterKills || 0))}</td>
+          <td style="padding:8px;border-bottom:1px solid #f3f4f6">${escapeHtml(String(row.BossKills || 0))}</td>
+        </tr>`);
+      });
+      html.push('</table>');
+      box.innerHTML = html.join('');
+    } catch (e) {
+      console.error(e);
+      box.innerHTML = '<div class="muted">读取排行榜失败</div>';
+    }
+  }
+
+  function setLoading(show, text){
+    document.getElementById('loadingText').textContent = text || '请稍等...';
+    document.getElementById('loadingMask').style.display = show ? 'flex' : 'none';
+  }
+
+  async function handleLogin(){
+    const nm = document.getElementById('username').value.trim();
+    const msg = document.getElementById('loginMsg');
+    if (!nm) return msg.textContent = '请输入学生姓名，方便系统记录成绩和排行榜。';
+    msg.textContent = '正在加载题库...';
+    setLoading(true, '正在加载题库，请稍等...');
+    try {
+      displayUser = nm;
+      user = normalizeName(nm);
+      saveAuth(displayUser);
+      await loadChapters();
+      try { await loadProgress(); } catch (_) { progressState = { exp:0, level:1, monsters:{}, bosses:{} }; }
+      updateHeader();
+      document.getElementById('login').style.display = 'none';
+      showChapterList();
+      msg.textContent = '';
+    } catch (e) {
+      console.error(e);
+      msg.textContent = '题库加载失败，请检查 Chapters.csv 是否已上传，或刷新页面后重试。';
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function getBookFromUrl(){
+    try {
+      const u = new URL(location.href);
+      const raw = (u.searchParams.get('book') || u.searchParams.get('subject') || '').trim();
+      if (!raw) return '';
+      return raw.replace(/[-_]+/g, ' ').replace(/\s+/g, ' ').toUpperCase();
+    } catch(_) { return ''; }
+  }
+
+  function updateUrlBookParam(){
+    try {
+      const u = new URL(location.href);
+      u.searchParams.set('book', book);
+      history.replaceState(null, '', u.toString());
+    } catch(_) {}
+  }
+
+  function updateAppTitle(){
+    const title = SITE_TITLE + (book ? ' - ' + book : '');
+    document.title = title;
+    const loginTitle = document.getElementById('loginTitle');
+    if (loginTitle) loginTitle.textContent = title;
+  }
+
+  function encodePath(path){
+    return String(path || '').split('/').map(part => encodeURIComponent(part)).join('/');
+  }
+
+  function getSubjectBasePath(){
+    const file = CHAPTERS_CSV || 'Chapters.csv';
+    const idx = file.lastIndexOf('/');
+    return idx >= 0 ? file.slice(0, idx) : '';
+  }
+
+  function getChaptersCsvUrl(){
+    return encodePath(CHAPTERS_CSV || 'Chapters.csv');
+  }
+
+  function resolveRelativeUrl(raw){
+    const s = String(raw || '').trim();
+    if (!s) return '';
+    if (/^(https?:|data:|blob:)/i.test(s)) return s;
+    if (s.startsWith('/')) return s;
+    const base = getSubjectBasePath();
+    const full = base && !s.startsWith(base + '/') ? base + '/' + s : s;
+    return encodePath(full);
+  }
+
+  function inferBookFromTitle(title){
+    const m = String(title||'').match(/(F\d+\s+(?:SC|ACC)|MM|F4-ACC-Free)/i);
+    return m ? m[1].toUpperCase() : '';
+  }
+
+  function getUserAgent(){
+    try { return navigator.userAgent || ''; } catch { return ''; }
+  }
+
+  function explainLoginError(errMsg){
+    const s = String(errMsg || '');
+    if (s.includes('月密码错误') || s.includes('有效日期')) return '密码不对，或当前日期不在有效期内。请再检查一次。';
+    if (s.includes('Missing')) return '请输入姓名和月密码。';
+    if (s.includes('empty')) return '系统里还没有月密码资料，请联络老师。';
+    return '连接验证失败，请刷新后重试；若还是不行，请改用 Chrome / Safari，或联络老师。';
+  }
+
+  async function apiFetch(params, retries=3){
+    let lastErr;
+    for (let i=0;i<=retries;i++){
+      try {
+        const u = new URL(SCRIPT_URL);
+        Object.entries({ ...params, v:APP_VERSION, _:String(Date.now()) }).forEach(([k,v]) => u.searchParams.set(k, v == null ? '' : String(v)));
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 12000);
+        const res = await fetch(u.toString(), { method:'GET', cache:'no-store', credentials:'omit', signal:controller.signal });
+        clearTimeout(timer);
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        return await res.json();
+      } catch (e) {
+        lastErr = e;
+        await new Promise(r => setTimeout(r, 550 + i * 450));
+      }
+    }
+    throw lastErr || new Error('Fetch error');
+  }
+
+  function normalizeName(name){
+    return String(name || '').trim().toLowerCase();
+  }
+
+  function saveAuth(user){
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ user, book }));
+  }
+  function readSavedAuth(){
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null'); } catch { return null; }
+  }
+
+  function updateHeader(prevLevel){
+    const exp = Number(progressState.exp || 0);
+    const level = Number(progressState.level || 1);
+    const progress = exp % 100;
+    document.getElementById('statUser').textContent = '学生：' + (displayUser || user || '-');
+    document.getElementById('statBook').textContent = '科目：' + (SUBJECT_LABELS[book] || book);
+    document.getElementById('statLevel').textContent = 'Lv ' + level;
+    document.getElementById('statExp').textContent = `⚡${progress} / 100`;
+    document.getElementById('xpFill').style.width = progress + '%';
+    const msg = document.getElementById('levelUpMsg');
+    if (prevLevel && level > prevLevel) {
+      msg.textContent = `🎉 Level Up! Lv ${prevLevel} → Lv ${level}`;
+      clearTimeout(updateHeader._lvTimer);
+      updateHeader._lvTimer = setTimeout(() => { msg.textContent = ''; }, 2600);
+    }
+  }
+
+  function loadChapters(){
+    return new Promise((resolve, reject) => {
+      Papa.parse(getChaptersCsvUrl(), {
+        download:true, header:true, skipEmptyLines:true,
+        complete(res){
+          rows = res.data.map(raw => {
+            const r={}; Object.entries(raw).forEach(([k,v])=>r[k.trim()]=v?.toString()?.trim() ?? v);
+            return r;
+          });
+          if (!rows.length) return reject(new Error('请检查 Chapters.csv'));
+          const keys = Object.keys(rows[0]);
+          chapterKey = keys.find(k=>k.toLowerCase()==='chapter');
+          labelKey   = keys.find(k=>k.toLowerCase()==='label');
+          sheetKey   = keys.find(k=>k.toLowerCase()==='sheet');
+          if (!chapterKey || !labelKey || !sheetKey) return reject(new Error('Chapters.csv 需要列: chapter, label, sheet'));
+          rows = rows.map(r => ({ ...r, [sheetKey]: resolveRelativeUrl(r[sheetKey]) }));
+          resolve();
+        },
+        error(err){ reject(err); }
+      });
+    });
+  }
+
+
+  function addCacheBuster(url){
+    const sep = String(url).includes('?') ? '&' : '?';
+    return String(url) + sep + '_cache=' + Date.now();
+  }
+
+  function parseCsvOnce(url){
+    return new Promise(resolve => {
+      Papa.parse(addCacheBuster(url), {
+        download:true, header:true, skipEmptyLines:true,
+        complete(res){
+          const list = (res.data || []).map(q => ({...q, attempt:0})).filter(q => q.question && String(q.question).trim());
+          resolve(list);
+        },
+        error(){ resolve([]); }
+      });
+    });
+  }
+
+  async function loadQuestionsReliable(url, tries=4){
+    for (let i=0;i<tries;i++){
+      const list = await parseCsvOnce(url);
+      if (list.length) return list;
+      await new Promise(r => setTimeout(r, 650 + i * 450));
+    }
+    return [];
+  }
+
+  async function loadProgress(){
+    const r = await apiFetch({ action:'getProgress', book, name:user }, 3);
+    if (r.ok) {
+      progressState = r.progress || { exp:0, level:1, monsters:{}, bosses:{} };
+      serverBaseMs = Number(r.serverNow || 0);
+      perfBaseMs = performance.now();
+    }
+  }
+
+  function getMainChapterNo(chapterStr){
+    if (!chapterStr) return null;
+    const m = String(chapterStr).match(/(?:^|\s)(?:Chp|Bab)\s*([0-9]+)/i);
+    return m ? parseInt(m[1],10) : null;
+  }
+
+  async function showChapterList(){
+    document.getElementById('quiz').style.display = 'none';
+    document.getElementById('finish').style.display = 'none';
+    const wrap = document.getElementById('chapterWrap');
+    wrap.innerHTML = '';
+    updateHeader();
+
+    const groups = new Map();
+    const order = [];
+    const OTHERS = 'OTHERS';
+    for (const r of rows){
+      const no = getMainChapterNo(r[chapterKey]);
+      const key = no === null ? OTHERS : String(no);
+      if (!groups.has(key)) { groups.set(key, []); if (key !== OTHERS) order.push(key); }
+      groups.get(key).push(r);
+    }
+
+    for (const key of [...order, ...(groups.has(OTHERS)?[OTHERS]:[])]) {
+      const arr = groups.get(key);
+      const g = document.createElement('div'); g.className = 'group';
+      const title = document.createElement('div'); title.className = 'group-title';
+      title.textContent = key === 'OTHERS' ? '其他 Others' : `Chp/Bab ${key}`;
+      g.appendChild(title);
+
+      if (key !== 'OTHERS') {
+        const bossCard = await buildBossCard(key, arr);
+        g.appendChild(bossCard);
+      }
+
+      for (const row of arr) {
+        const item = await buildMonsterItem(row);
+        g.appendChild(item);
+      }
+      wrap.appendChild(g);
+    }
+    document.getElementById('chapters').style.display = 'block';
+    focusLastCard();
+  }
+
+  function buildMonsterId(row){
+    return [book, row[chapterKey]||'', row[labelKey]||'', row[sheetKey]||''].join('||');
+  }
+
+  async function getQuestionCount(url){
+    if (countCache.has(url)) return countCache.get(url);
+    const cnt = await new Promise(resolve => {
+      Papa.parse(url, {
+        download:true, header:true, skipEmptyLines:true,
+        complete(r2){
+          const c = r2.data.filter(q => q.question && String(q.question).trim()).length;
+          resolve(c);
+        },
+        error(){ resolve(0); }
+      });
+    });
+    countCache.set(url, cnt);
+    return cnt;
+  }
+
+  async function buildMonsterItem(row){
+    const item = document.createElement('div'); item.className = 'monster-item';
+    const left = document.createElement('div'); left.className = 'title';
+    const monsterId = buildMonsterId(row);
+    item.id = 'monster_' + hashId(monsterId);
+    const st = progressState.monsters[monsterId] || {};
+    const titleText = `${row[chapterKey]}${row[labelKey] ? ' — ' + row[labelKey] : ''}`;
+    const cnt = await getQuestionCount(row[sheetKey]);
+    const now = nowMs();
+    const isDead = st.reviveAt && Number(st.reviveAt) > now;
+    const statusText = isDead ? `💀 已击败（${daysLeft(st.reviveAt)}后复活）` : '🟢 存活';
+    const streak = Number(st.killStreak || 0);
+    left.innerHTML = `
+      <div class="title-main">🧟 ${escapeHtml(titleText)}</div>
+      <div class="meta">题数：${cnt}<br>怪兽状态：<span class="status ${isDead?'dead':'alive'}">${statusText}</span><br>连杀：${streak}</div>
+    `;
+
+    const actions = document.createElement('div'); actions.className = 'actions';
+    const practiceBtn = document.createElement('button');
+    practiceBtn.className = 'btn secondary small';
+    practiceBtn.textContent = '做练习';
+    practiceBtn.onclick = () => startQuiz(row, 'practice');
+
+    const fightBtn = document.createElement('button');
+    fightBtn.className = 'btn small' + (isDead ? ' done' : '');
+    fightBtn.textContent = isDead ? '✅ 已击败' : '⚔️ 打怪';
+    fightBtn.disabled = isDead;
+    fightBtn.onclick = () => startQuiz(row, 'monster');
+
+    actions.append(practiceBtn, fightBtn);
+    item.append(left, actions);
+    return item;
+  }
+
+  async function buildBossCard(babNo, arr){
+    const card = document.createElement('div'); card.className = 'boss-card';
+    const left = document.createElement('div'); left.className = 'title';
+    card.id = 'boss_' + String(babNo);
+    const bossState = progressState.bosses[String(babNo)] || { hp:100, killCount:0, reviveAt:0 };
+    const total = arr.length;
+    let deadCount = 0;
+    const now = nowMs();
+    for (const row of arr) {
+      const st = progressState.monsters[buildMonsterId(row)] || {};
+      if (st.reviveAt && Number(st.reviveAt) > now) deadCount++;
+    }
+    const deadPct = total ? deadCount / total : 0;
+    const locked = deadPct < 0.7;
+    const isDead = bossState.reviveAt && Number(bossState.reviveAt) > now;
+    const bossStatus = isDead ? `Dead（${daysLeft(bossState.reviveAt)}后复活）` : (locked ? `Locked（已击败 ${deadCount}/${total} 小怪）` : `HP ${Number(bossState.hp || 100)}/100`);
+    left.innerHTML = `
+      <div class="title-main">👹 Bab ${babNo} Boss</div>
+      <div class="meta">怪兽状态：<span class="status ${isDead?'dead':(locked?'locked':'alive')}">${bossStatus}</span><br>Boss击杀次数：${Number(bossState.killCount||0)}</div>
+    `;
+    const actions = document.createElement('div'); actions.className = 'actions';
+    const btn = document.createElement('button'); btn.className = 'btn boss small'; btn.textContent = '⚔️ 挑战 Boss';
+    btn.disabled = locked || isDead;
+    btn.onclick = () => startBossFight(babNo, arr);
+    actions.appendChild(btn);
+    card.append(left, actions);
+    return card;
+  }
+
+  async function startQuiz(row, mode){
+    if (mode === 'monster') {
+      setLoading(true, '正在检查小怪状态，请稍等...');
+      try {
+        const guard = await apiFetch({ action:'canStartBattle', book, name:user, type:'monster', monsterId:buildMonsterId(row) }, 3);
+        if (!guard.ok || !guard.canStart) {
+          setLoading(false);
+          alert(guard.error || '这只小怪还没有复活，不能重复挑战。');
+          await loadProgress();
+          updateHeader();
+          return showChapterList();
+        }
+      } catch(e) {
+        setLoading(false);
+        alert('连接验证失败，请点“更新页面”后再试。');
+        return;
+      }
+    }
+    currentMode = mode;
+    currentRow = row;
+    if (mode === 'monster' || mode === 'practice') lastFocusId = 'monster_' + hashId(buildMonsterId(row));
+    currentBab = getMainChapterNo(row[chapterKey]);
+    currentBossMeta = null;
+    document.getElementById('chapters').style.display = 'none';
+    document.getElementById('quiz-title').textContent = `${row[chapterKey]}${row[labelKey] ? ' — ' + row[labelKey] : ''}`;
+    document.getElementById('mode-badge').textContent = mode === 'practice' ? '模式：普通练习' : '模式：小怪挑战';
+    score = correct = wrong = 0;
+    currentExpGain = 0;
+    chapterStart = 0;
+    setLoading(true, '正在加载题目，请稍等...');
+    qs = await loadQuestionsReliable(row[sheetKey], 4);
+    if (!qs.length) {
+      setLoading(false);
+      alert('题库暂时没有成功加载，请等几秒后再按一次。系统不会提交空成绩。');
+      clearBattleHp();
+      return showChapterList();
+    }
+    baseTotal = qs.length;
+    queue = shuffle([...qs]);
+    if (mode === 'monster') setupBattleHp('🧟 小怪血量', qs.length, qs.length);
+    else clearBattleHp();
+    document.getElementById('quiz').style.display = 'block';
+    updateUI(0);
+    setLoading(false);
+    nextQ();
+  }
+
+  async function startBossFight(babNo, arr){
+    setLoading(true, '正在检查 Boss 状态，请稍等...');
+    try {
+      const guard = await apiFetch({ action:'canStartBattle', book, name:user, type:'boss', bab:String(babNo) }, 3);
+      if (!guard.ok || !guard.canStart) {
+        setLoading(false);
+        alert(guard.error || 'Boss 还没有复活，不能重复挑战。');
+        await loadProgress();
+        updateHeader();
+        return showChapterList();
+      }
+    } catch(e) {
+      setLoading(false);
+      alert('连接验证失败，请点“更新页面”后再试。');
+      return;
+    }
+    currentMode = 'boss';
+    currentRow = { [chapterKey]: `Bab ${babNo}`, [labelKey]:'Boss Challenge' };
+    lastFocusId = 'boss_' + String(babNo);
+    currentBab = babNo;
+    currentExpGain = 0;
+    chapterStart = 0;
+    score = correct = wrong = 0;
+    document.getElementById('chapters').style.display = 'none';
+    document.getElementById('quiz-title').textContent = `Bab ${babNo} Boss`;
+    document.getElementById('mode-badge').textContent = '模式：Boss 挑战';
+
+    setLoading(true, '正在准备 Boss 题库，请稍等...');
+    let all = [];
+    for (const row of arr) {
+      const list = await loadQuestions(row[sheetKey]);
+      all = all.concat(list);
+    }
+    all = all.filter(q => q.question && String(q.question).trim());
+    if (!all.length) {
+      setLoading(false);
+      alert('Boss题库暂时没有成功加载，请等几秒后再试。系统不会提交空成绩。');
+      clearBattleHp();
+      return showChapterList();
+    }
+    const count = Math.min(20, Math.max(8, Math.ceil(all.length * 0.25)));
+    qs = shuffle(all).slice(0, count).map(q => ({...q, attempt:0}));
+    baseTotal = qs.length;
+    queue = [...qs];
+    currentBossMeta = { totalPool: all.length, count };
+    currentMonsterRowsForBoss = arr.map(r => buildMonsterId(r));
+    const bState = (progressState.bosses && progressState.bosses[String(babNo)]) || {};
+    setupBattleHp('👹 Boss血量（预估）', Number(bState.hp || 100), 100);
+    document.getElementById('quiz').style.display = 'block';
+    updateUI(0);
+    setLoading(false);
+    nextQ();
+  }
+
+  async function loadQuestions(url){
+    if (monsterQuestionCache.has(url)) return monsterQuestionCache.get(url);
+    const list = await loadQuestionsReliable(url, 4);
+    if (list.length) monsterQuestionCache.set(url, list);
+    return list;
+  }
+
+
+  function setupBattleHp(label, hp, maxHp){
+    battleLabel = label || '怪兽血量';
+    battleHp = Math.max(0, Number(hp || 0));
+    battleMaxHp = Math.max(1, Number(maxHp || hp || 1));
+    playerMaxHp = 5; playerHp = 5; wrongStreak = 0; correctStreak = 0; battleEndedByDeath = false;
+    document.getElementById('battleArena').style.display = (currentMode === 'practice') ? 'none' : 'block';
+    document.getElementById('playerName').textContent = displayUser || user || '学生';
+    document.getElementById('enemyName').textContent = currentMode === 'boss' ? 'Boss' : '小怪';
+    document.getElementById('monsterIcon').textContent = currentMode === 'boss' ? '👹' : '🧟';
+    document.getElementById('enemyHpLabel').textContent = currentMode === 'boss' ? 'Boss HP' : '小怪HP';
+    setCombatMsg('⚠️ 连错3题会额外扣1HP；连对3题会回复1HP。');
+    renderBattleHp();
+  }
+
+  function damageBattleHp(amount){ if (battleHp == null) return; battleHp = Math.max(0, battleHp - Math.max(0, Number(amount || 0))); animateEnemyHit(); renderBattleHp(); }
+  function damagePlayerHp(amount){ if (playerHp == null) return; playerHp = Math.max(0, playerHp - Math.max(0, Number(amount || 0))); animatePlayerHit(); renderBattleHp(); }
+  function healPlayerHp(amount){ if (playerHp == null) return; const before = playerHp; playerHp = Math.min(playerMaxHp, playerHp + Math.max(0, Number(amount || 0))); if (playerHp > before) animatePlayerHeal(); renderBattleHp(); }
+  function clearBattleHp(){ battleHp = battleMaxHp = null; playerHp = playerMaxHp = 5; wrongStreak = correctStreak = 0; battleEndedByDeath = false; const arena=document.getElementById('battleArena'); if(arena) arena.style.display='none'; }
+  function renderBattleHp(){
+    if (currentMode === 'practice' || battleHp == null || battleMaxHp == null) { clearBattleHp(); return; }
+    document.getElementById('battleArena').style.display = 'block';
+    const ePct = Math.max(0, Math.min(100, Math.round(battleHp / battleMaxHp * 100)));
+    const pPct = Math.max(0, Math.min(100, Math.round(playerHp / playerMaxHp * 100)));
+    document.getElementById('enemyHpFill').style.width = ePct + '%';
+    document.getElementById('enemyHpText').textContent = `${Math.ceil(battleHp)} / ${Math.ceil(battleMaxHp)}`;
+    document.getElementById('playerHpFill').style.width = pPct + '%';
+    document.getElementById('playerHpText').textContent = `${Math.ceil(playerHp)} / ${Math.ceil(playerMaxHp)}`;
+  }
+  function setCombatMsg(msg){ const el=document.getElementById('combatMsg'); if(el) el.textContent=msg||''; }
+  function animateEnemyHit(){ const el=document.getElementById('monsterIcon'); el.classList.remove('hit'); void el.offsetWidth; el.classList.add('hit'); }
+  function animatePlayerHit(){ const el=document.getElementById('playerIcon'); el.classList.remove('hit'); void el.offsetWidth; el.classList.add('hit'); }
+  function animatePlayerAttack(){ const el=document.getElementById('playerIcon'); el.classList.remove('attack'); void el.offsetWidth; el.classList.add('attack'); }
+  function animatePlayerHeal(){ const el=document.getElementById('playerIcon'); el.classList.remove('heal'); void el.offsetWidth; el.classList.add('heal'); }
+
+  function updateUI(delta){
+    document.getElementById('score').textContent = `得分: ${score} ${delta ? '(' + (delta>0?'+':'') + delta + ')' : ''}`;
+    document.getElementById('remaining').textContent = `剩余题目: ${queue.length}`;
+    const pg = document.getElementById('progress');
+    pg.max = qs.length || 1; pg.value = (qs.length - queue.length);
+  }
+
+  function nextQ(){
+    const qa = document.getElementById('question-area');
+    qa.innerHTML = ''; updateUI(0);
+    if (queue.length === 0) {
+      if (!qs.length) {
+        alert('题库没有成功加载，系统不会提交空成绩。请回到章节后再试一次。');
+        return showChapterList();
+      }
+      return finishQuiz();
+    }
+
+    const q = queue.shift();
+    if (!chapterStart) chapterStart = Date.now();
+    const div = document.createElement('div'); div.className = 'question';
+    div.innerHTML = `<p><strong>${(q.question||'').replace(/\r?\n/g,'<br/>')}</strong></p>`;
+
+    if (q.image){
+      const img = document.createElement('img');
+      img.src = resolveRelativeUrl(String(q.image).replace(/\s*\//g,'/').trim(), book);
+      div.appendChild(img);
+    }
+
+    const opts = document.createElement('div'); opts.className = 'options';
+    if (q.type === 'text'){
+      opts.innerHTML = '<input type="text" id="txtAns" placeholder="请输入答案…"/>';
+    } else {
+      const letters = Array.from({length:MAX_OPTS}, (_,i)=>String.fromCharCode(65+i));
+      shuffle(letters.filter(l=>q[l])).forEach(l=>{
+        const inp = document.createElement('input');
+        inp.type = (q.type==='checkbox'?'checkbox':'radio');
+        inp.name='opt'; inp.value=l; inp.id='opt_'+l;
+        const lbl=document.createElement('label'); lbl.className='option-label'; lbl.htmlFor='opt_'+l;
+        lbl.appendChild(inp); lbl.append(' '+q[l]); opts.appendChild(lbl);
+      });
+    }
+    div.appendChild(opts);
+
+    const fb = document.createElement('div'); fb.className='feedback'; div.appendChild(fb);
+    const sb = document.createElement('button'); sb.className='btn'; sb.textContent='提交';
+    sb.onclick = () => {
+      let ua=[];
+      if (q.type==='text'){
+        ua = document.getElementById('txtAns').value.split(',').map(s=>s.trim()).filter(Boolean);
+      } else {
+        ua = Array.from(div.querySelectorAll('input[name="opt"]:checked')).map(i=>i.value);
+      }
+      if (!ua.length) return alert('请选择或输入答案');
+
+      let isC=false;
+      if (q.type==='text'){
+        const lows = ua.map(s=>s.toLowerCase());
+        const ansList = String(q.answer||'').split(',').map(s=>s.trim().toLowerCase()).filter(Boolean);
+        isC = lows.some(v=>ansList.includes(v));
+      } else if (q.type === 'checkbox') {
+        const uaA = ua.map(s=>s.toUpperCase()).sort().join(',');
+        const caA = String(q.answer||'').split(',').map(s=>s.trim().toUpperCase()).filter(Boolean).sort().join(',');
+        isC = uaA === caA;
+      } else {
+        const accept = String(q.answer||'').split(',').map(s=>s.trim().toUpperCase()).filter(Boolean);
+        isC = ua.length === 1 && accept.includes(ua[0].toUpperCase());
+      }
+
+      const allAnsHtml = (() => {
+        if (q.type === 'text') {
+          return String(q.answer||'').split(',').map(s=>s.trim()).filter(Boolean).map((s,i)=>`${i+1}. ${s}`).join('<br>');
+        }
+        return String(q.answer||'').split(',').map(s=>s.trim().toUpperCase()).filter(Boolean).map(letter => q[letter] || letter).join('<br>');
+      })();
+
+      let delta;
+      if (currentMode === 'boss') {
+        delta = isC ? 2 : -1;
+      } else {
+        delta = isC ? (q.attempt?1:2) : (q.attempt?-2:-1);
+      }
+      score += delta; if (isC) correct++; else wrong++;
+      if (currentMode !== 'practice') {
+        if (isC) {
+          animatePlayerAttack(); wrongStreak = 0; correctStreak++;
+          if (currentMode === 'monster') damageBattleHp(1);
+          if (currentMode === 'boss') damageBattleHp(Math.ceil(100 / Math.max(1, qs.length)));
+          if (correctStreak >= 3) { correctStreak = 0; healPlayerHp(1); setCombatMsg('🔥 连对3题，回复 1 HP！'); }
+          else setCombatMsg('⚔️ 攻击成功！');
+        } else {
+          correctStreak = 0; wrongStreak++;
+          let hurt = 1;
+          if (wrongStreak >= 3) { hurt += 1; wrongStreak = 0; setCombatMsg('💥 连错3题，额外扣 1 HP！'); }
+          else setCombatMsg('💥 被怪兽攻击，扣 1 HP！');
+          damagePlayerHp(hurt);
+        }
+      }
+
+      const explainLine = q.explain ? `<br><span style="font-weight:normal">${String(q.explain)}</span>` : '';
+      fb.innerHTML = isC
+        ? `正确! ${delta>0?'+':''}${delta}<br>正确答案：<br>${allAnsHtml}${explainLine}`
+        : `错误! ${delta}<br>正确答案：<br>${allAnsHtml}${explainLine}`;
+
+      updateUI(delta);
+      sb.disabled = true;
+      const nb = document.createElement('button'); nb.className='btn secondary'; nb.textContent = '下一题'; nb.onclick = nextQ;
+      div.appendChild(nb);
+
+      if (currentMode !== 'practice' && playerHp <= 0) {
+        battleEndedByDeath = true;
+        fb.innerHTML += '<br><span style="color:#b91c1c">💀 你被怪兽击败了，本次挑战失败，没有EXP。</span>';
+        nb.textContent = '查看结果';
+        queue = [];
+      }
+
+      if (!isC && currentMode !== 'boss' && !battleEndedByDeath){
+        q.attempt++;
+        for (let i=0;i<2;i++) {
+          queue.splice(Math.floor(Math.random()*(queue.length+1)),0,{...q});
+        }
+      }
+    };
+    div.appendChild(sb);
+
+    document.getElementById('question-area').appendChild(div);
+  }
+
+  async function finishQuiz(){
+    if (!qs.length) {
+      alert('题库没有成功加载，系统不会提交空成绩。请等几秒后再试。');
+      return showChapterList();
+    }
+    document.getElementById('quiz').style.display='none';
+    document.getElementById('finish').style.display='block';
+
+    const quizEndTime = Date.now();
+    const usedSeconds = chapterStart ? Math.floor((quizEndTime - chapterStart)/1000) : 0;
+    const accuracy = baseTotal ? Math.min(1, correct / baseTotal) : 0;
+    const accuracyPct = Math.round(accuracy * 100);
+    let battleMsg = '';
+    let exp = 10;
+    if (battleEndedByDeath && currentMode !== 'practice') exp = 0;
+
+    if (currentMode === 'monster') {
+      const kill = !battleEndedByDeath && accuracy >= 0.70;
+      const perfect = !battleEndedByDeath && accuracy >= 0.90;
+      if (kill) exp += 20;
+      if (perfect) exp += 30;
+      if (battleEndedByDeath) exp = 0;
+      const res = battleEndedByDeath ? { ok:true, progress:progressState } : await apiFetch({ action:'updateMonster', book, name:user, monsterId:buildMonsterId(currentRow), accuracy: accuracyPct }, 3);
+      if (res.ok) {
+        progressState = res.progress;
+        battleMsg = battleEndedByDeath
+          ? `💀 挑战失败！你被小怪击败了，建议先做普通练习。`
+          : (kill
+            ? (perfect ? `💀 Perfect Kill！小怪已死亡，30天后复活。` : `💀 小怪已击败，进入复活倒数。`)
+            : `⚠️ 挑战失败！未达到击杀门槛（需要 ≥70%），小怪仍存活。`);
+      }
+    } else if (currentMode === 'boss') {
+      if (battleEndedByDeath) exp = 0;
+      else if (accuracy >= 0.90) exp += 150;
+      else if (accuracy >= 0.70) exp += 60;
+      else if (accuracy >= 0.50) exp += 25;
+      const res = battleEndedByDeath
+        ? { ok:true, progress:progressState, boss:{ hp:((progressState.bosses && progressState.bosses[String(currentBab)] || {}).hp || 100), killedNow:false } }
+        : await apiFetch({ action:'updateBoss', book, name:user, bab:String(currentBab), accuracy: accuracyPct, monsterIds:JSON.stringify(currentMonsterRowsForBoss || []) }, 3);
+      if (res.ok) {
+        progressState = res.progress;
+        const b = res.boss || {};
+        if (battleEndedByDeath) battleMsg = '💀 Boss战失败！你被Boss击败了，本次没有EXP。';
+        else if (b.killedNow) battleMsg = '👹 Boss 已被击杀！本 Bab 所有小怪也同步死亡一次。';
+        else battleMsg = `⚔️ Boss 仍存活，当前 HP：${Number(b.hp||0)}/100。需要继续挑战。`;
+      }
+    } else {
+      battleMsg = accuracy >= 70 ? '📘 练习完成，已记录成绩。' : '📘 练习完成。';
+    }
+
+    currentExpGain = exp;
+    const quizIdForExp = currentMode === 'boss' ? `Bab ${currentBab} Boss` : currentRow[chapterKey];
+    const expRes = await apiFetch({ action:'addExp', book, name:user, quizId:quizIdForExp, amount:String(exp), reason:currentMode }, 3);
+    const prevLevel = Number(progressState.level || 1);
+    if (expRes.ok) {
+      currentExpGain = Number(expRes.awarded || 0);
+      progressState = expRes.progress;
+    } else {
+      currentExpGain = 0;
+    }
+    updateHeader(prevLevel);
+
+    document.getElementById('finish-msg').textContent = `恭喜 ${displayUser || user}，本次完成！`;
+    document.getElementById('stats').textContent = `模式：${modeLabel(currentMode)}｜得分: ${score}｜正确率: ${accuracyPct}%｜答对 ${correct} 题｜答错 ${wrong} 题｜用时：${formatDuration(usedSeconds)}｜EXP +${currentExpGain}`;
+    document.getElementById('battle-result').textContent = battleMsg + (currentExpGain === 0 && exp > 0 ? '（今天这个练习拿经验已达10次上限）' : '');
+    document.getElementById('submit-status').textContent = '正在上传成绩…';
+
+    await submitScore(usedSeconds);
+
+    const ctrl=document.getElementById('controls'); ctrl.innerHTML='';
+    const back=document.createElement('button'); back.className='btn';
+    back.textContent='返回章节选择';
+    back.onclick=()=>{ document.getElementById('finish').style.display='none'; showChapterList(); };
+    ctrl.appendChild(back);
+  }
+
+  function modeLabel(m){
+    return m === 'practice' ? '普通练习' : (m === 'monster' ? '小怪挑战' : 'Boss挑战');
+  }
+
+  async function submitScore(durationSeconds){
+    const form = document.getElementById('postForm');
+    const payload = {
+      book,
+      quizId: currentMode === 'boss' ? `Bab ${currentBab} Boss` : currentRow[chapterKey],
+      name: displayUser || user,
+      score,
+      correct,
+      wrong,
+      time: Number(durationSeconds || 0),
+      mode: currentMode,
+      expGained: currentExpGain
+    };
+    document.getElementById('submit-status').textContent = '正在提交成绩，请稍等...';
+    setLoading(true, '正在提交成绩，请不要关闭页面...');
+    try {
+      const res = await apiFetch({ action:'submitScore', ...payload }, 3);
+      document.getElementById('submit-status').textContent = res.ok ? '✅ 成绩已提交' : '⚠️ 成绩提交失败，请截图给老师';
+    } catch(e) {
+      console.error(e);
+      document.getElementById('submit-status').textContent = '⚠️ 成绩提交失败，请刷新或截图给老师';
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function daysLeft(ts){
+    const diff = Number(ts) - nowMs();
+    const days = Math.ceil(diff / (1000*60*60*24));
+    return `${Math.max(days,1)}天`;
+  }
+
+  function formatDuration(sec){
+    const s = Math.max(0, Number(sec||0));
+    const m = Math.floor(s / 60);
+    const r = s % 60;
+    return m ? `${m}分 ${r}秒` : `${r}秒`;
+  }
+
+
+  function hashId(s){ let h=0; const str=String(s||''); for(let i=0;i<str.length;i++) h=((h<<5)-h)+str.charCodeAt(i)|0; return Math.abs(h).toString(36); }
+  function focusLastCard(){ if(!lastFocusId) return; setTimeout(()=>{ const el=document.getElementById(lastFocusId); if(!el) return; el.scrollIntoView({behavior:'smooth',block:'center'}); el.classList.add('focus-card'); setTimeout(()=>el.classList.remove('focus-card'),2400); },180); }
+
+  function escapeHtml(s){
+    return String(s || '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  }
+
+  function shuffle(a){
+    for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
+    return a;
+  }
+});
+</script>
+</body>
+</html>
